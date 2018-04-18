@@ -21,15 +21,21 @@ namespace PKISharp.WACS.Services
         private ILogService _log;
         private Options _options;
         private AcmeClientWrapper _client;
+        private ProxyService _proxy;
         private string _configPath;
         private string _certificatePath;
 
-        public CertificateService(IOptionsService options, ILogService log, AcmeClientWrapper client, SettingsService settingsService)
+        public CertificateService(IOptionsService options, 
+            ILogService log,
+            AcmeClientWrapper client, 
+            ProxyService proxy,
+            SettingsService settingsService)
         {
             _log = log;
             _options = options.Options;
             _client = client;
             _configPath = settingsService.ConfigPath;
+            _proxy = proxy;
             InitCertificatePath();
         }
 
@@ -378,6 +384,7 @@ namespace PKISharp.WACS.Services
                     using (var web = new WebClient())
                     using (var stream = web.OpenRead(new Uri(new Uri(_options.BaseUri), upLink.Uri)))
                     {
+                        web.Proxy = _proxy.GetWebProxy();
                         return cp.ImportCertificate(EncodingFormat.DER, stream);
                     }
                 }

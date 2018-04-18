@@ -63,6 +63,10 @@ namespace PKISharp.WACS
                         _input.Show("Target plugin", resolver.GetTargetPlugin(scope).Description);
                         _input.Show("Validation plugin", resolver.GetValidationPlugin(scope).Description);
                         _input.Show("Store plugin", resolver.GetStorePlugin(scope).Description);
+                        if (!string.IsNullOrEmpty(target.CertificateStore))
+                        {
+                            _input.Show("Certificate store", target.CertificateStore);
+                        }
                         _input.Show("Install plugin(s)", string.Join(", ", resolver.GetInstallationPlugins(scope).Select(x => x.Description)));
                         _input.Show("Renewal due", target.Date.ToUserString());
                         _input.Show("Script", target.Script);
@@ -87,7 +91,7 @@ namespace PKISharp.WACS
         private static void RenewSpecific()
         {
             var target = _input.ChooseFromList("Which renewal would you like to run?",
-                _renewalService.Renewals,
+                _renewalService.Renewals.OrderBy(x => x.Date),
                 x => Choice.Create(x),
                 true);
             if (target != null)
@@ -102,7 +106,7 @@ namespace PKISharp.WACS
         private static void RevokeCertificate()
         {
             var target = _input.ChooseFromList("Which certificate would you like to revoke?",
-                _renewalService.Renewals,
+                _renewalService.Renewals.OrderBy(x => x.Date),
                 x => Choice.Create(x),
                 true);
             if (target != null)
@@ -132,7 +136,7 @@ namespace PKISharp.WACS
         private static void CancelSingleRenewal()
         {
             var renewal = _input.ChooseFromList("Which renewal would you like to cancel?",
-                _renewalService.Renewals,
+                _renewalService.Renewals.OrderBy(x => x.Date),
                 x => Choice.Create(x),
                 true);
 

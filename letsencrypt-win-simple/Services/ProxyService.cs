@@ -33,10 +33,16 @@ namespace PKISharp.WACS.Services
                 {
                     Uri testUrl = new Uri("http://proxy.example.com");
                     Uri proxyUrl = proxy.GetProxy(testUrl);
+
+                    if (string.IsNullOrWhiteSpace(Properties.Settings.Default.ProxyUsername))
+                    {
+                        proxy.Credentials = new NetworkCredential(Properties.Settings.Default.ProxyUsername, Properties.Settings.Default.ProxyPassword);
+                    }
+
                     bool useProxy = !string.Equals(testUrl.Host, proxyUrl.Host);
                     if (useProxy)
                     {
-                        _log.Warning("Proxying via {proxy}", proxyUrl.Host);
+                        _log.Warning("Proxying via {proxy}:{port}", proxyUrl.Host, proxyUrl.Port);
                     }
                 }
                 _proxy = proxy;

@@ -112,24 +112,32 @@ namespace PKISharp.WACS.Services
             {
                 // Try loading additional dlls in the current dir to attempt to find plugin types in them
                 var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                var allFiles = Directory.EnumerateFileSystemEntries(baseDir, "*.dll");
+                var allFiles = Directory.EnumerateFileSystemEntries(baseDir, "*.dll", SearchOption.TopDirectoryOnly);
                 assemblies.AddRange(allFiles.Select(AssemblyName.GetAssemblyName).Select(Assembly.Load));
             }
             catch (Exception ex)
             {
-                _logger.Error("Error loading types for plugins.", ex);
+                _logger.Error("Error loading assemblies for plugins.", ex);
             }
 
             foreach (var assembly in assemblies)
             {
-                var foundTypes = assembly
-                    .GetTypes()
-                    .Where(type => typeof(T) != type && typeof(T).IsAssignableFrom(type) && !type.IsAbstract);
-                if (!allowNull)
+                try
                 {
-                    foundTypes = foundTypes.Where(type => !typeof(INull).IsAssignableFrom(type));
+                    var foundTypes = assembly
+                        .GetTypes()
+                        .Where(type => typeof(T) != type && typeof(T).IsAssignableFrom(type) && !type.IsAbstract);
+                    if (!allowNull)
+                    {
+                        foundTypes = foundTypes.Where(type => !typeof(INull).IsAssignableFrom(type));
+                    }
+                    ret.AddRange(foundTypes);
                 }
-                ret.AddRange(foundTypes);
+                catch (Exception ex)
+                {
+                    _logger.Error("Error loading types from assembly {assembly}: {@ex}", assembly.FullName, ex);
+                }
+
             }
 
             return ret.ToList();

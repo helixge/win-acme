@@ -25,7 +25,7 @@ namespace PKISharp.WACS.Properties {
         
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("yyyy/M/d h:mm:ss tt")]
+        [global::System.Configuration.DefaultSettingValueAttribute("yyyy/M/d H:mm:ss tt")]
         public string FileDateFormat {
             get {
                 return ((string)(this["FileDateFormat"]));
@@ -146,6 +146,33 @@ namespace PKISharp.WACS.Properties {
         public global::System.TimeSpan ScheduledTaskStartBoundary {
             get {
                 return ((global::System.TimeSpan)(this["ScheduledTaskStartBoundary"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("win-acme")]
+        public string ClientName {
+            get {
+                return ((string)(this["ClientName"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ProxyUsername {
+            get {
+                return ((string)(this["ProxyUsername"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ProxyPassword {
+            get {
+                return ((string)(this["ProxyPassword"]));
             }
         }
     }

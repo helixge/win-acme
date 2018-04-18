@@ -97,6 +97,17 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>win-acme.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="ACMESharp, Version=0.9.1.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\ACMESharp.0.9.1.326\lib\net45\ACMESharp.dll</HintPath>
@@ -166,7 +177,7 @@
       <HintPath>..\packages\Microsoft.Rest.ClientRuntime.Azure.Authentication.2.3.1\lib\net452\Microsoft.Rest.ClientRuntime.Azure.Authentication.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Web.Administration, Version=10.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Web.Administration.11.0.0\lib\netstandard1.5\Microsoft.Web.Administration.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Web.Administration.11.1.0\lib\netstandard1.5\Microsoft.Web.Administration.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Win32.Primitives">
       <HintPath>..\packages\Microsoft.Win32.Primitives.4.3.0\lib\net46\Microsoft.Win32.Primitives.dll</HintPath>
@@ -336,6 +347,7 @@
     <Compile Include="Plugins\Base\BaseValidationPluginFactory.cs" />
     <Compile Include="Plugins\Base\NullTargetFactory.cs" />
     <Compile Include="Plugins\Base\NullValidationFactory.cs" />
+    <Compile Include="Plugins\InstallationPlugins\IISFtpInstaller.cs" />
     <Compile Include="Plugins\Interfaces\IInstallationPlugin.cs" />
     <Compile Include="Plugins\Interfaces\IInstallationPluginFactory.cs" />
     <Compile Include="Plugins\Interfaces\IStorePlugin.cs" />
@@ -344,7 +356,7 @@
     <Compile Include="Plugins\Interfaces\IValidationPluginFactory.cs" />
     <Compile Include="Plugins\Interfaces\ICore.cs" />
     <Compile Include="CertificateInfo.cs" />
-    <Compile Include="Plugins\InstallationPlugins\IISInstaller.cs" />
+    <Compile Include="Plugins\InstallationPlugins\IISWebInstaller.cs" />
     <Compile Include="Plugins\Base\NullInstallationFactory.cs" />
     <Compile Include="Plugins\InstallationPlugins\ScriptInstaller.cs" />
     <Compile Include="Plugins\Resolvers\InteractiveResolver.cs" />
@@ -419,6 +431,7 @@
     <Content Include="settings_default.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="Scripts\ImportSSTP.ps1" />
   </ItemGroup>
   <ItemGroup>
     <None Include="FodyWeavers.xml" />

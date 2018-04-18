@@ -16,9 +16,6 @@ namespace PKISharp.WACS
 {
     partial class Program
     {
-        // TODO: cannot rename yet due to backwards compatibility
-        private const string _clientName = "letsencrypt-win-simple";
-
         private static IInputService _input;
         private static IRenewalService _renewalService;
         private static IOptionsService _optionsService;
@@ -31,7 +28,7 @@ namespace PKISharp.WACS
         private static void Main(string[] args)
         {
             // Setup DI
-            _container = AutofacBuilder.Global(args, _clientName, new PluginService(_log));
+            _container = AutofacBuilder.Global(args);
 
             // Basic services
             _log = _container.Resolve<ILogService>();
@@ -81,10 +78,9 @@ namespace PKISharp.WACS
                         MainMenu();
                     }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    HandleException(e);
-                    Environment.ExitCode = e.HResult;
+                    HandleException(ex);
                 }
                 if (!_options.CloseOnFinish)
                 {
@@ -104,6 +100,7 @@ namespace PKISharp.WACS
         {
             _log.Debug($"{ex.GetType().Name}: {{@e}}", ex);
             _log.Error($"{ex.GetType().Name}: {{e}}", ex.Message);
+            Environment.ExitCode = ex.HResult;
         }
 
         /// <summary>
@@ -159,14 +156,16 @@ namespace PKISharp.WACS
             if (renewal == null)
             {
                 renewal = temp;
-            } 
+            }
             else
             {
-                renewal.New = true;
+                renewal.Updated = true;
             }
             renewal.Test = temp.Test;
             renewal.Binding = temp.Binding;
             renewal.CentralSslStore = temp.CentralSslStore;
+            renewal.CertificateStore = temp.CertificateStore;
+            renewal.InstallationPluginNames = temp.InstallationPluginNames;
             renewal.KeepExisting = temp.KeepExisting;
             renewal.Script = temp.Script;
             renewal.ScriptParameters = temp.ScriptParameters;
@@ -317,10 +316,12 @@ namespace PKISharp.WACS
         private static RenewResult Renew(ILifetimeScope renewalScope, ScheduledRenewal renewal)
         {
             var targetPlugin = renewalScope.Resolve<ITargetPlugin>();
+            var originalBinding = renewal.Binding;
             renewal.Binding = targetPlugin.Refresh(renewal.Binding);
             if (renewal.Binding == null)
             {
                 _log.Error("Renewal target not found");
+                renewal.Binding = originalBinding;
                 return new RenewResult(new Exception("Renewal target not found"));
             }
             var split = targetPlugin.Split(renewal.Binding);
@@ -346,7 +347,7 @@ namespace PKISharp.WACS
             var errors = auth.Challenges?.
                 Select(c => c.ChallengePart).
                 Where(cp => cp.Status == _authorizationInvalid).
-                SelectMany(cp => cp.Error);
+                SelectMany(cp => cp.Error ?? new Dictionary<string, string>());
 
             if (errors?.Count() > 0)
             {
@@ -429,11 +430,11 @@ namespace PKISharp.WACS
                             var installInstance = (IInstallationPlugin)renewalScope.Resolve(installFactory.Instance);
                             if (steps > 1)
                             {
-                                _log.Information("Installation step {n}/{m}: {name}...", i + 1, steps, installFactory.Description);
+                                _log.Information("Installation step {n}/{m}: {name}...", i + 1, steps, installFactory.Name);
                             }
                             else
                             {
-                                _log.Information("Installing with {name}...", installFactory.Description);
+                                _log.Information("Installing with {name}...", installFactory.Name);
                             }
                             installInstance.Install(newCertificate, oldCertificate);
                         }
@@ -464,7 +465,7 @@ namespace PKISharp.WACS
                 }
 
                 // Add or update renewal
-                if (renewal.New &&
+                if ((renewal.New || renewal.Updated) &&
                     !_options.NoTaskScheduler &&
                     (!_options.Test ||
                     _input.PromptYesNo($"[--test] Do you want to automatically renew this certificate?")))
@@ -473,6 +474,8 @@ namespace PKISharp.WACS
                     taskScheduler.EnsureTaskScheduler();
                     _renewalService.Save(renewal, result);
                 }
+
+                // Save renewal to store
                 return result;
             }
             catch (Exception ex)
