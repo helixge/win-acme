@@ -6,25 +6,24 @@ using System.Linq;
 namespace PKISharp.WACS.Plugins.ValidationPlugins.Http
 {
     /// <summary>
-    /// Ftp validation
+    /// Sftp validation
     /// </summary>
-    internal class FtpFactory : BaseHttpValidationFactory<Ftp>
+    internal class SftpFactory : BaseHttpValidationFactory<Sftp>
     {
-        public FtpFactory(ILogService log) : base(log, nameof(Ftp), "Upload verification file to FTP(S) server") {}
+        public SftpFactory(ILogService log) : base(log, nameof(Sftp), "Upload verification file to SFTP server") {}
 
         public override bool CanValidate(Target target) => string.IsNullOrEmpty(target.WebRootPath) || ValidateWebroot(target);
 
         public override bool ValidateWebroot(Target target)
         {
-            return target.WebRootPath.StartsWith("ftp");
+            return target.WebRootPath.StartsWith("sftp");
         }
 
         public override string[] WebrootHint()
         {
             return new[] {
-                "Enter an ftp path that leads to the web root of the host for http authentication",
-                    " Example, ftp://domain.com:21/site/wwwroot/",
-                    " Example, ftps://domain.com:990/site/wwwroot/"
+                "Enter an sftp path that leads to the web root of the host for sftp authentication",
+                    " Example, sftp://domain.com:22/site/wwwroot/"
                 };
         }
 
@@ -41,42 +40,43 @@ namespace PKISharp.WACS.Plugins.ValidationPlugins.Http
         }
     }
 
-    internal class Ftp : BaseHttpValidation
+    internal class Sftp : BaseHttpValidation
     {
-        private FtpClient _ftpClient;
+        private SshFtpClient _sshFtpClient;
 
-        public Ftp(ScheduledRenewal renewal, Target target, ILogService log, IInputService input, ProxyService proxy, string identifier) : 
+        public Sftp(ScheduledRenewal renewal, Target target, ILogService log, IInputService input, ProxyService proxy, string identifier) : 
             base(log, input, proxy, renewal, target, identifier)
         {
-            _ftpClient = new FtpClient(target.HttpFtpOptions, log);
+            _sshFtpClient = new SshFtpClient(target.HttpFtpOptions.GetCredential(), log);
         }
 
         protected override char PathSeparator => '/';
 
         protected override void DeleteFile(string path)
         {
-            _ftpClient.Delete(path, FtpClient.FileType.File);
+            _sshFtpClient.Delete(path, SshFtpClient.FileType.File);
         }
 
         protected override void DeleteFolder(string path)
         {
-            _ftpClient.Delete(path, FtpClient.FileType.Directory);
+            _sshFtpClient.Delete(path, SshFtpClient.FileType.Directory);
         }
 
         protected override bool IsEmpty(string path)
         {
-            return !_ftpClient.GetFiles(path).Any();
+            return !_sshFtpClient.GetFiles(path).Any();
         }
 
         protected override void WriteFile(string path, string content)
         {
-            _ftpClient.Upload(path, content);
+            _sshFtpClient.Upload(path, content);
         }
 
         public override void CleanUp()
         {
-            _ftpClient = null;
             base.CleanUp();
+            // Switched setting this to null, since this class will be needed for deleting files and folder structure
+            _sshFtpClient = null;
         }
     }
 }

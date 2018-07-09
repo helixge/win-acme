@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace PKISharp.WACS.Services.Renewal
 {
-    abstract class BaseRenewalService : IRenewalService
+    internal abstract class BaseRenewalService : IRenewalService
     {
         internal ILogService _log;
         internal string _baseUri;
@@ -66,14 +66,8 @@ namespace PKISharp.WACS.Services.Renewal
 
         public IEnumerable<ScheduledRenewal> Renewals
         {
-            get
-            {
-                return ReadRenewals();
-            }
-            set
-            {
-                WriteRenewals(value);
-            }
+            get => ReadRenewals();
+            set => WriteRenewals(value);
         }
 
         public void Cancel(ScheduledRenewal renewal)
@@ -126,7 +120,10 @@ namespace PKISharp.WACS.Services.Renewal
             {
                 if (r.Updated)
                 {
-                    File.WriteAllText(HistoryFile(r, _configPath).FullName, JsonConvert.SerializeObject(r.History));
+                    var history = HistoryFile(r, _configPath);
+                    if (history != null) {
+                        File.WriteAllText(history.FullName, JsonConvert.SerializeObject(r.History));
+                    }
                     r.Updated = false;
                 }
             });
@@ -150,7 +147,7 @@ namespace PKISharp.WACS.Services.Renewal
             try
             {
                 result = JsonConvert.DeserializeObject<ScheduledRenewal>(renewal);
-                if (result == null || result.Binding == null)
+                if (result?.Binding == null)
                 {
                     throw new Exception();
                 }
@@ -165,7 +162,7 @@ namespace PKISharp.WACS.Services.Renewal
             {
                 result.History = new List<RenewResult>();
                 var historyFile = HistoryFile(result, path);
-                if (historyFile.Exists)
+                if (historyFile != null && historyFile.Exists)
                 {
                     try
                     {
@@ -209,7 +206,12 @@ namespace PKISharp.WACS.Services.Renewal
         /// <returns></returns>
         private FileInfo HistoryFile(ScheduledRenewal renewal, string configPath)
         {
-            return new FileInfo(Path.Combine(configPath, $"{renewal.Binding.Host}.history.json"));
+            FileInfo fi = configPath.LongFile("", renewal.Binding.Host, ".history.json", _log);
+            if (fi == null) {
+                _log.Warning("Unable access history for {renewal]", renewal);
+            }
+            return fi;
         }
+
     }
 }

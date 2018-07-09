@@ -14,7 +14,7 @@ using System.Threading;
 
 namespace PKISharp.WACS
 {
-    partial class Program
+    internal partial class Program
     {
         private static IInputService _input;
         private static IRenewalService _renewalService;
@@ -23,7 +23,7 @@ namespace PKISharp.WACS
         private static ILogService _log;
         private static IContainer _container;
 
-        static bool IsElevated => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
+        private static bool IsElevated => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator);
 
         private static void Main(string[] args)
         {
@@ -140,7 +140,7 @@ namespace PKISharp.WACS
                 CentralSslStore = options.CentralSslStore,
                 CertificateStore = options.CertificateStore,
                 KeepExisting = options.KeepExisting,
-                InstallationPluginNames = options.Installation.Count() > 0 ? options.Installation.ToList() : null,
+                InstallationPluginNames = options.Installation.Any() ? options.Installation.ToList() : null,
                 Warmup = options.Warmup
             };
         }
@@ -297,10 +297,15 @@ namespace PKISharp.WACS
                     return;
                 }
 
-                var result = Renew(scope, CreateRenewal(tempRenewal));
+                var renewal = CreateRenewal(tempRenewal);
+                var result = Renew(scope, renewal);
                 if (!result.Success)
                 {
                     _log.Error("Create certificate failed");
+                }
+                else
+                {
+                    _renewalService.Save(renewal, result);
                 }
             }
         }
@@ -465,17 +470,15 @@ namespace PKISharp.WACS
                 }
 
                 // Add or update renewal
-                if ((renewal.New || renewal.Updated) &&
+                if (renewal.New &&
                     !_options.NoTaskScheduler &&
                     (!_options.Test ||
                     _input.PromptYesNo($"[--test] Do you want to automatically renew this certificate?")))
                 {
                     var taskScheduler = renewalScope.Resolve<TaskSchedulerService>();
                     taskScheduler.EnsureTaskScheduler();
-                    _renewalService.Save(renewal, result);
                 }
 
-                // Save renewal to store
                 return result;
             }
             catch (Exception ex)
@@ -494,6 +497,7 @@ namespace PKISharp.WACS
                     result.ErrorMessage = ex.Message;
                 }
             }
+
             return result;
         }
 
@@ -520,7 +524,7 @@ namespace PKISharp.WACS
                     _log.Verbose("Checking {renewal}", renewal.Binding.Host);
                     if (renewal.Date >= now)
                     {
-                        _log.Information("Renewal for certificate {renewal} not scheduled, due after {date}", renewal.Binding.Host, renewal.Date.ToUserString());
+                        _log.Information(true, "Renewal for certificate {renewal} is due after {date}", renewal.Binding.Host, renewal.Date.ToUserString());
                     }
                     else
                     {
@@ -565,8 +569,8 @@ namespace PKISharp.WACS
 
             try
             {
-                List<string> identifiers = target.GetHosts(false);
-                List<AuthorizationState> authStatus = new List<AuthorizationState>();
+                var identifiers = target.GetHosts(false);
+                var authStatus = new List<AuthorizationState>();
                 var client = renewalScope.Resolve<AcmeClientWrapper>();
                 foreach (var identifier in identifiers)
                 {
